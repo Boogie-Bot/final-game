@@ -10,5 +10,22 @@ virus spreading in proximity - simulate the spread of a virus in a
 tooth brushing sim 
 fda approved foods - diseased foods - avoid the bad foods
 plague cells - have to stop the spread of plague in a body
-Zombie Survival Game - character runs around and finds ingredients
-	to create cure before zombies catch him
+Zombie Survival Game - character runs around and finds ingredients to create cure before zombies catch him
+        Mutation system - the plague evolves over time, changing enemy types and symptoms
+        Infection meter - player slowly gets infected; manage exposure with masks, meds, and rest
+        Plague rats - carriers that spread plague to new areas if not exterminated
+        Plague doctor NPC - mysterious masked healer who trades cures for rare herbs
+        Corrupt officials - leaders hoarding medicine; expose them or side with them
+        Burn the bodies - timed cleanup mechanic; corpses left too long spawn new infections
+         - must find something to burn them with
+         - timed releases - items used to burn bodies are limited and don't exist at first
+        Immunity bloodline - certain NPCs are immune; protect and escort them to scientists
+        Snake oil salesmen - fake cures circulating; test remedies to tell real from scam
+        Plague bell curfew - city shuts down at night when zombies/difficulty increase, but also loot
+            - can 'sleep' instead in any 'safe house' to pass the night to morning
+        Supply caravan escort - guard medicine shipments between towns through infected territory
+        Herbal crafting - gather ingredients to brew tonics, antidotes, and preventatives
+            - use real herbs and their properties to make it educational
+        Abandoned hospital dungeon - explore an overrun medical center for research notes
+            - this could be the real 'finish' point of each stage, where the player finds a cure or dies to infection
+            - So there is a fog of war system surrounding the city and the player must explore to find the hospital
