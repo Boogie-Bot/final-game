@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://sprite_stack.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="crate_shape"]
+size = Vector2(36, 36)
+
+[node name="Crate" type="StaticBody2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("crate_shape")
+
+[node name="Stack" type="Node2D" parent="."]
+script = ExtResource("1")
+model = &"crate"
