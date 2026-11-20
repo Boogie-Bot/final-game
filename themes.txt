@@ -5,7 +5,12 @@ i wish it would rain - implement weather effects of some kind
 
 
 
-virus spreading in proximity - simulate the spread of a virus in a population
+virus spreading in proximity - simulate the spread of a virus in a 
+	population
 tooth brushing sim 
 fda approved foods - diseased foods - avoid the bad foods
 plague cells - have to stop the spread of plague in a body
+Zombie Survival Game - similar to survivor!.io mobile game
+Quarintine - Insepctor at border, inspects ids and temperature readings. 
+	Choose to accept bribes or not, letting wrong people in or accepting 
+	bribes increases chance of city becoming infected.
