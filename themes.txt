@@ -1,4 +1,5 @@
 Zombie Survival Game - character runs around and finds ingredients to create cure before zombies catch him
+
         - Mutation system - the plague evolves over time, changing enemy types and symptoms
         - Infection meter - player slowly gets infected; manage exposure with masks, meds, and rest
         - Plague rats - carriers that spread plague to new areas if not exterminated
@@ -22,3 +23,90 @@ Sub themes:
     - 80's baby! - recreate the visual style of the 80's media
     - take a chance on me - create a system of chance
     - i wish it would rain - implement weather effects of some kind
+
+New feature ideas (building on the current game):
+
+    Moment-to-moment play
+        - Sprint/stamina - short burst of speed with a cooldown bar; zombies lunge in return
+        - Push/shove - knock a zombie down 
+            - short cooldown (2 secs, no visible indicator) 
+            - include shoving animation toward the closest zombie
+            - include getting up animations - takes 3 seconds
+        - Crates actually open - herbs, a stamina tonic, a distraction item, or nothing
+            - Throwable distraction - toss a bottle/rock to pull nearby zombies toward the noise
+            - Ingredient clues - notes in crates, minimap glows for a second with a ping around the ingredient location
+            - Demolition charge - collapses a building; the falling sprite-stack crushes everything in its
+                  shadow and permanently opens a shortcut through the block (show collapsed rubble sprite/s)
+                  - animation for falling building
+        - Car alarms - touching a car sets off its alarm, drawing every zombie in earshot screenwide-ish (circular) radius for 4 seconds
+        - Infection trail - the survivor leaves footprints the zombies can see,
+          fading over 10 seconds
+
+    City and exploration
+        - Minimap - corner map that mirrors the fog of war; cure herbs ping it when close
+        - Street signs / district names - 
+            - each quadrant gets a name and visual flavor so
+            - Street signs at intersections and district names on the minimap help
+        - Interiors - a handful of buildings with an open door; step inside for possible loot but
+          the vision circle becomes your only light, and there are zombies (bigger on the inside!)
+        - Safe houses - a few marked buildings where zombies never follow; heal slowly
+          inside, but time (and the spawner) keeps running
+        - Rain (i wish it would rain) 
+            - rain muffles your noise 
+            - smaller zombie sight range 
+            - hides their shuffling (no audio cue)
+            - 30% chance during any given game
+            - Rains the whole time or not.
+            - Puddles slow you down and make extra noise, spawn every 5-12 seconds
+
+    Zombies and AI
+        - Zombie variants - 
+            - runner (fast, fragile sight)
+            - brute (slow, wide aggro, shoves you)
+            - screamer (calls the horde in a large radius when it spots you), very slow
+            - different sprites and audio cues, and animations. Slower zombies should move in really messed up looking ways
+        - Hearing model - zombies react to running footsteps, alarms, and breaking
+          crates, not just line of sight.
+        - Horde events - every 30 seconds a siren sounds and a wave of 20 zombies spawns at the map
+          edge and runs down one road path from one edge to another; hide or reroute
+
+    Cure and progression
+        - Brewing step (herbal crafting) - collecting all 4 ingredients isn't the win;
+          carry them to the hospital/lab and survive a timed brew while zombies possibly break in through windows
+        - Partial doses - 2 ingredients = a weak serum that slows infection gain for a
+          while; spend progress now or bank it for the cure
+        - Meta-unlocks - surviving runs unlocks starting perks (faster walk, bonus chest,
+          longer vision circle) to reward replays on harder difficulties
+
+    Zombie-player endgame
+        - Zombie abilities - as the player zombie: a roar that rallies nearby NPC zombies
+          to converge on the survivor - 10 second cooldown
+            - a short lunge attack
+
+    Presentation / juice
+        - 80's mode (80's baby!) - neon HUD, synthwave palette swap
+        - Score screen - 
+            - time survived
+            - herbs used
+            - zombies dodged/shoved (within a certain closeness)
+            - cure progress
+        - Photo of the fallen - the end screen shows your explored-map
+          zoomed out when you died as player, fades over to map of zombie map zoomed out when you died as zombie
+
+    Outside the box (unexpected elements)
+        - Zombie empathy - herbs can be fed to a zombie instead of eaten; a fed zombie
+          calms, turns a different color, and follows you as a shield.
+        - One phone call - a random payphone rings every 7-9 seconds; answering roots you in place
+          (vulnerable) while a voice gives one true secret (a cure location, the next
+          horde's road) - hanging up early garbles the tip
+        - Zombie parkour inversion - as the player zombie you can shamble THROUGH
+          buildings' ground floors (you're dead, doors mean nothing). Glass breaking
+          noise or door clattering when going through.
+        - Difficulty area - difficulty menu: easy/medium/hard are three 
+          doors in a starting alley; walk through only one. Door one is new clean
+          looking door (easy), two is a dirty dilapidated door. 3 is an ancient ruin looking door (hard).
+          Door locks behind you.
+        - The herbs sing - each cure herb hums a looping musical phrase that gets
+          louder as you near it (audio-only navigation through fog); the four phrases
+          harmonize into the game's main theme when all are collected
+        - Hard is navigation by vision circle only, fog of war does not disappear.

@@ -22,6 +22,10 @@ func _ready() -> void:
 	add_to_group(&"cure_herb" if cure_index >= 0 else &"heal_herb")
 	if cure_index >= 0:
 		stack.build(StackModels.cure_herb(cure_index))
+		# Cure herbs "sing": louder as you approach.
+		var hum: AudioStreamPlayer2D = Sfx.attach_loop(&"herb_hum_%d" % cure_index, self)
+		hum.max_distance = 1600.0
+		hum.attenuation = 2.0
 
 
 func _process(delta: float) -> void:

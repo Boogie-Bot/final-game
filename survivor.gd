@@ -16,6 +16,10 @@ signal died
 var infection: float = 0.0
 var cures: Array[bool] = [false, false, false, false]
 var dead: bool = false
+var interior_id: int = -1
+var in_safe_house: bool = false
+var _kb_vel := Vector2.ZERO
+var _kb_time: float = 0.0
 
 @onready var stack: SpriteStack = $Stack
 @onready var hitbox: Area2D = $Hitbox
@@ -43,6 +47,9 @@ func _physics_process(delta: float) -> void:
 	# Zombies never block movement, but wading through one costs 25% speed.
 	var effective_speed := speed * (0.75 if _touching_zombie() else 1.0)
 	velocity = direction * effective_speed
+	if _kb_time > 0.0:
+		_kb_time -= delta
+		velocity = _kb_vel * maxf(_kb_time, 0.0) / 0.25
 	move_and_slide()
 
 	# Cornered against a wall: detour perpendicular to the blocked heading
@@ -89,7 +96,11 @@ func _decide_direction(delta: float) -> Vector2:
 
 	var target := _pick_target_herb()
 	var herb_dir := Vector2.ZERO
-	if target:
+	if _has_all_cures():
+		var lab = _lab_position()
+		if lab != null and global_position.distance_to(lab) > 40.0:
+			herb_dir = (lab - global_position).normalized()
+	elif target:
 		herb_dir = (target.global_position - global_position).normalized()
 
 	# Collect threats; the danger zone is a bit wider than the reaction radius
@@ -132,6 +143,32 @@ func _decide_direction(delta: float) -> Vector2:
 	return _desired_dir
 
 
+func _has_all_cures() -> bool:
+	return cures.all(func(c: bool) -> bool: return c)
+
+
+## Lab position from the hospital system, or null when unavailable.
+func _lab_position() -> Variant:
+	if Game.main == null:
+		return null
+	var h = Game.main.get("hospital")
+	if h and h.has_method("lab_position"):
+		return h.lab_position()
+	return null
+
+
+func knockback(impulse: Vector2) -> void:
+	_kb_vel = impulse
+	_kb_time = 0.25
+
+
+## The hospital calls this when the brew completes.
+func finish_cure() -> void:
+	if dead:
+		return
+	cured.emit()
+
+
 func _pick_target_herb() -> Node2D:
 	# Detour to a healing herb when getting sick
 	if infection > 35.0:
@@ -172,8 +209,6 @@ func collect_cure(index: int) -> void:
 		return
 	cures[index] = true
 	cure_collected.emit(index)
-	if cures.all(func(c: bool) -> bool: return c):
-		cured.emit()
 
 
 func _die() -> void:
