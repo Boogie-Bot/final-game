@@ -1,10 +1,11 @@
 extends Node
-## Every 30s a siren sounds and 20 zombies run down one whole road.
+## Every 30s a siren sounds and 50-80 zombies run down one whole road.
 
 const INTERVAL := 30.0
-const COUNT := 20
+const COUNT_MIN := 50
+const COUNT_MAX := 80
 const RUNNER_CHANCE := 0.25
-const SPAWN_GAP := 0.12
+const SPAWN_GAP := 0.05
 
 var main
 var _timer := INTERVAL
@@ -75,12 +76,12 @@ func _launch() -> void:
 	var side := dir.orthogonal()
 	Sfx.play(&"siren")
 	Game.say("SIREN! A horde is coming down %s!" % _name_of(road), Color(1.0, 0.25, 0.2))
-	for i in COUNT:
+	for i in randi_range(COUNT_MIN, COUNT_MAX):
 		if not is_inside_tree():
 			return
 		var pos := start + side * randf_range(-34.0, 34.0) - dir * randf_range(0.0, 20.0)
 		var variant: StringName = &"runner" if randf() < RUNNER_CHANCE else &"walker"
-		var z = main.spawn_zombie(pos, variant)
+		var z = main.spawn_zombie(pos, variant, -1, true)  # the horde ignores the spawn rules
 		if z != null and z.has_method("set_horde_path"):
 			z.set_horde_path(PackedVector2Array([pos, finish + side * (pos - start).dot(side)]))
 		await get_tree().create_timer(SPAWN_GAP).timeout

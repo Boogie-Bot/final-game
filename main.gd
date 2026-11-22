@@ -16,6 +16,7 @@ const CRATE_SCENE := preload("res://crate.tscn")
 const SURVIVOR_SCENE := preload("res://survivor.tscn")
 
 const SPAWN_INTERVAL := 10.0
+const SPAWN_SCREEN_MARGIN := 96.0  # px beyond the screen edge that still counts as visible
 
 # [healing herbs, zombie multiplier, npc-zombie drain vs CPU survivor,
 #  player-zombie drain vs CPU survivor, zombie spawn interval]
@@ -234,7 +235,7 @@ func start_game(difficulty: int) -> void:
 	player.attack_rate = DIFFICULTIES[difficulty][3]
 	_spawn_interval = DIFFICULTIES[difficulty][4]
 	_spawn_timer = _spawn_interval
-	_spawn_entities(herb_count, zombie_mult)
+	_spawn_entities(herb_count, zombie_mult, Vector2(300, 480))  # where the player lands
 	_spawn_cure_herbs()
 	if Game.perks.get("bonus_chest", false):
 		spawn_crate(_visible_spot(Vector2(380, 420)), true)
@@ -467,7 +468,7 @@ func _add_prop(model: StringName, pos: Vector2, rot: float, collision_radius: fl
 ## Spawns the starting entities for the chosen difficulty: zombie count is
 ## scaled by zombie_mult (extras fan out around the listed spots), and
 ## herb_count healing herbs are picked evenly from the HERBS list.
-func _spawn_entities(herb_count: int, zombie_mult: float) -> void:
+func _spawn_entities(herb_count: int, zombie_mult: float, view_center: Vector2) -> void:
 	var zombie_total := int(round(ZOMBIES.size() * zombie_mult))
 	for n in zombie_total:
 		var pos: Vector2
@@ -476,7 +477,13 @@ func _spawn_entities(herb_count: int, zombie_mult: float) -> void:
 		else:
 			var base: Vector2 = ZOMBIES[n % ZOMBIES.size()]
 			pos = base if n < ZOMBIES.size() else _scatter_point(base)
-		spawn_zombie(pos, _random_variant())
+		# Nudge spots that would be on-screen or unfogged; skip if none work.
+		var tries := 0
+		while not can_spawn_enemy_at(pos, view_center) and tries < 12:
+			pos = _scatter_point(pos)
+			tries += 1
+		if can_spawn_enemy_at(pos, view_center):
+			spawn_zombie(pos, _random_variant(), -1, true)
 	for n in herb_count:
 		spawn_herb(_visible_spot(HERBS[n * HERBS.size() / herb_count]))
 	for pos in CRATES:
@@ -495,7 +502,12 @@ func _random_variant() -> StringName:
 	return &"walker"
 
 
-func spawn_zombie(pos: Vector2, variant: StringName = &"walker", interior_id: int = -1) -> Node:
+## Enemies may only appear off-screen AND under fog (the horde bypasses this
+## with force). Interior zombies live in sealed rooms and are exempt.
+## Returns null when the spot breaks the rule.
+func spawn_zombie(pos: Vector2, variant: StringName = &"walker", interior_id: int = -1, force: bool = false) -> Node:
+	if not force and interior_id == -1 and not can_spawn_enemy_at(pos):
+		return null
 	var zombie := ZOMBIE_SCENE.instantiate()
 	zombie.position = pos
 	zombie.variant = variant
@@ -503,6 +515,17 @@ func spawn_zombie(pos: Vector2, variant: StringName = &"walker", interior_id: in
 	zombie.survivor_infection_rate = _npc_survivor_drain
 	add_child(zombie)
 	return zombie
+
+
+## True when pos is outside the camera view (with a margin) and still fogged.
+## view_center overrides the camera centre (used before the camera has moved).
+func can_spawn_enemy_at(pos: Vector2, view_center: Variant = null) -> bool:
+	if fog == null or not fog.is_fogged(pos):
+		return false
+	var cam: Camera2D = player.camera
+	var size: Vector2 = get_viewport_rect().size / cam.zoom
+	var center: Vector2 = view_center if view_center != null else cam.get_screen_center_position()
+	return not Rect2(center - size * 0.5, size).grow(SPAWN_SCREEN_MARGIN).has_point(pos)
 
 
 func spawn_herb(pos: Vector2, cure_index: int = -1) -> Node:
@@ -614,7 +637,7 @@ func _spawn_wave_zombie() -> void:
 		var pos := origin + Vector2.from_angle(angle) * dist
 		if pos.x < 60.0 or pos.y < 60.0 or pos.x > COLS * CELL - 60.0 or pos.y > ROWS * CELL - 60.0:
 			continue
-		if point_in_building(pos):
+		if point_in_building(pos) or not can_spawn_enemy_at(pos):
 			continue
 		var score: float
 		# Hard mode fog never stays cleared, so "fogged" says nothing there:
@@ -648,7 +671,6 @@ func _on_herbs_changed(count: int) -> void:
 func _on_cure_collected(index: int) -> void:
 	_set_cure_row(index, true)
 	_cures_found += 1
-	_update_cure_title()
 	_show_popup(player.CURE_NAMES[index] + " acquired!", Color(1.0, 0.88, 0.45))
 
 
@@ -657,16 +679,11 @@ func _on_cures_spent(indices: Array) -> void:
 		_set_cure_row(i, false)
 		_cures_found -= 1
 	_cures_found = maxi(_cures_found, 0)
-	_update_cure_title()
 
 
-func _update_cure_title() -> void:
-	$HUD/CureList/CureTitle.text = "Cure Ingredients: %d / 4" % _cures_found
-
-
+## Collected ingredients show full color; missing ones sit dim and ghostly.
 func _set_cure_row(index: int, collected: bool) -> void:
 	var row: HBoxContainer = $HUD/CureList.get_node("Row%d" % index)
-	row.get_node("Name").text = ("✔ " if collected else "") + player.CURE_NAMES[index]
 	row.modulate = Color(1, 1, 1, 1) if collected else Color(0.75, 0.75, 0.75, 0.4)
 
 
@@ -715,7 +732,6 @@ func _drop_player_items() -> void:
 		spawn_herb(visible_spot(drop_pos + Vector2.from_angle(randf() * TAU) * randf_range(40, 95)))
 	player.herbs = 0
 	_cures_found = maxi(_cures_found, 0)
-	_update_cure_title()
 
 
 ## A random open point in the quadrant farthest from `origin`.

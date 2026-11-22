@@ -20,17 +20,24 @@ position = Vector2(300, 480)
 process_mode = 3
 
 [node name="InfectionLabel" type="Label" parent="HUD"]
-offset_left = 16.0
-offset_top = 10.0
-offset_right = 200.0
-offset_bottom = 32.0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -110.0
+offset_top = 34.0
+offset_right = 110.0
+offset_bottom = 56.0
+grow_horizontal = 2
 text = "Infection"
+horizontal_alignment = 1
 
 [node name="InfectionBar" type="ProgressBar" parent="HUD"]
-offset_left = 16.0
-offset_top = 34.0
-offset_right = 236.0
-offset_bottom = 56.0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -110.0
+offset_top = 58.0
+offset_right = 110.0
+offset_bottom = 80.0
+grow_horizontal = 2
 theme_override_styles/background = SubResource("bar_bg")
 theme_override_styles/fill = SubResource("bar_fill")
 max_value = 100.0
@@ -38,32 +45,28 @@ value = 0.0
 show_percentage = false
 
 [node name="HerbsLabel" type="Label" parent="HUD"]
-offset_left = 16.0
-offset_top = 62.0
-offset_right = 200.0
-offset_bottom = 84.0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -110.0
+offset_top = 84.0
+offset_right = 110.0
+offset_bottom = 106.0
+grow_horizontal = 2
 text = "Herbs: 0"
+horizontal_alignment = 1
 
-[node name="CureList" type="VBoxContainer" parent="HUD"]
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -280.0
-offset_top = 10.0
-offset_right = -16.0
-offset_bottom = 150.0
-grow_horizontal = 0
-
-[node name="CureTitle" type="Label" parent="HUD/CureList"]
-layout_mode = 2
-text = "Cure Ingredients: 0 / 4"
-horizontal_alignment = 2
-
-[node name="Row0" type="HBoxContainer" parent="HUD/CureList"]
-layout_mode = 2
-alignment = 2
+[node name="CureList" type="HBoxContainer" parent="HUD"]
+anchor_left = 0.75
+anchor_right = 0.75
+offset_left = -76.0
+offset_top = 12.0
+offset_right = 76.0
+offset_bottom = 44.0
+grow_horizontal = 2
+alignment = 1
 theme_override_constants/separation = 10
 
-[node name="Name" type="Label" parent="HUD/CureList/Row0"]
+[node name="Row0" type="HBoxContainer" parent="HUD/CureList"]
 layout_mode = 2
 
 [node name="Icon" type="TextureRect" parent="HUD/CureList/Row0"]
@@ -75,11 +78,6 @@ stretch_mode = 5
 
 [node name="Row1" type="HBoxContainer" parent="HUD/CureList"]
 layout_mode = 2
-alignment = 2
-theme_override_constants/separation = 10
-
-[node name="Name" type="Label" parent="HUD/CureList/Row1"]
-layout_mode = 2
 
 [node name="Icon" type="TextureRect" parent="HUD/CureList/Row1"]
 layout_mode = 2
@@ -90,11 +88,6 @@ stretch_mode = 5
 
 [node name="Row2" type="HBoxContainer" parent="HUD/CureList"]
 layout_mode = 2
-alignment = 2
-theme_override_constants/separation = 10
-
-[node name="Name" type="Label" parent="HUD/CureList/Row2"]
-layout_mode = 2
 
 [node name="Icon" type="TextureRect" parent="HUD/CureList/Row2"]
 layout_mode = 2
@@ -104,11 +97,6 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Row3" type="HBoxContainer" parent="HUD/CureList"]
-layout_mode = 2
-alignment = 2
-theme_override_constants/separation = 10
-
-[node name="Name" type="Label" parent="HUD/CureList/Row3"]
 layout_mode = 2
 
 [node name="Icon" type="TextureRect" parent="HUD/CureList/Row3"]
@@ -123,9 +111,9 @@ visible = false
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -300.0
-offset_top = 124.0
+offset_top = 244.0
 offset_right = 300.0
-offset_bottom = 164.0
+offset_bottom = 284.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 30
 horizontal_alignment = 1

@@ -62,18 +62,19 @@ func setup(main: Node) -> void:
 
 
 func _build() -> void:
-	# Top-left stack, under HerbsLabel (y 62-84).
-	_stamina_bar = _make_bar(Vector2(16, 90), Vector2(180, 12), Color(0.35, 0.85, 0.4))
+	# Top-center stack, under the infection bar / herbs label (ends y 100).
+	_stamina_bar = _make_bar(Vector2.ZERO, Vector2(220, 12), Color(0.35, 0.85, 0.4))
+	_center_top(_stamina_bar, 112.0, 110.0, 12.0)
 	var stam_label := _make_label("STAMINA", 10, Color(1, 1, 1, 0.85))
-	stam_label.position = Vector2(202, 87)
-	add_child(stam_label)
+	stam_label.position = Vector2(226, -1)
+	_stamina_bar.add_child(stam_label)
 	_human_widgets.append(_stamina_bar)
-	_human_widgets.append(stam_label)
 
 	_inv_row = HBoxContainer.new()
-	_inv_row.position = Vector2(16, 110)
+	_inv_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_inv_row.add_theme_constant_override("separation", 14)
 	add_child(_inv_row)
+	_center_top(_inv_row, 130.0, 110.0, 24.0)
 	for item: StringName in [&"herb"] + ITEM_ORDER:
 		var box := HBoxContainer.new()
 		box.add_theme_constant_override("separation", 4)
@@ -91,10 +92,11 @@ func _build() -> void:
 		_inv_boxes[item] = box
 	_human_widgets.append(_inv_row)
 
-	_serum_bar = _make_bar(Vector2(16, 142), Vector2(180, 10), Color(0.5, 0.8, 1.0))
+	_serum_bar = _make_bar(Vector2.ZERO, Vector2(220, 10), Color(0.5, 0.8, 1.0))
+	_center_top(_serum_bar, 162.0, 110.0, 10.0)
 	var serum_label := _make_label("SERUM", 10, Color(0.7, 0.9, 1.0))
 	_serum_bar.add_child(serum_label)
-	serum_label.position = Vector2(186, -3)
+	serum_label.position = Vector2(226, -3)
 	_serum_bar.visible = false
 
 	# Top center: horde countdown and brew progress.
@@ -116,7 +118,7 @@ func _build() -> void:
 	_brew_bar.custom_minimum_size = Vector2(300, 14)
 	_brew_box.add_child(_brew_bar)
 	add_child(_brew_box)
-	_pin(_brew_box, Control.PRESET_CENTER_TOP, 36)
+	_pin(_brew_box, Control.PRESET_CENTER_TOP, 180)
 
 	# Bottom right, above the minimap: district + rain.
 	_district_label = _make_label("", 16, Color.WHITE)
@@ -298,6 +300,17 @@ func _pin(c: Control, preset: Control.LayoutPreset, margin: int, extra_y: float 
 	c.set_anchors_and_offsets_preset(preset, Control.PRESET_MODE_MINSIZE, margin)
 	c.offset_top += extra_y
 	c.offset_bottom += extra_y
+
+
+## Centers a control horizontally (half_w each side) at `y` from the top.
+func _center_top(c: Control, y: float, half_w: float, h: float) -> void:
+	c.anchor_left = 0.5
+	c.anchor_right = 0.5
+	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	c.offset_left = -half_w
+	c.offset_right = half_w
+	c.offset_top = y
+	c.offset_bottom = y + h
 
 
 # --- Herb-clue arrow -------------------------------------------------------------
