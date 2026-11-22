@@ -106,6 +106,8 @@ const HERBS := [
 const CRATES := [
 	Vector2(470, 380), Vector2(760, 500), Vector2(1340, 1000),
 	Vector2(1870, 640), Vector2(1060, 80), Vector2(2300, 1350),
+	Vector2(250, 1150), Vector2(1500, 320), Vector2(950, 1300),
+	Vector2(2100, 900), Vector2(620, 150),
 ]
 
 const CAR_SCRIPT := preload("res://car.gd")
@@ -113,7 +115,7 @@ const FOOTPRINTS_SCRIPT := preload("res://footprints.gd")
 const WEATHER_SCRIPT := preload("res://weather.gd")
 const HORDE_SCRIPT := preload("res://horde.gd")
 const PHONES_SCRIPT := preload("res://phones.gd")
-const DEMOLITION_SCRIPT := preload("res://demolition.gd")
+const ZMP_SCRIPT := preload("res://zmp.gd")
 const DISTRICTS_SCRIPT := preload("res://districts.gd")
 const HOSPITAL_SCRIPT := preload("res://hospital.gd")
 const INTERIORS_SCRIPT := preload("res://interiors.gd")
@@ -135,7 +137,7 @@ var footprints: Node
 var weather: Node
 var horde: Node
 var phones: Node
-var demolition: Node
+var zmp: Node
 var interiors: Node
 var hospital: Node
 var districts: Node
@@ -168,7 +170,7 @@ func _ready() -> void:
 	hospital = _add_system(HOSPITAL_SCRIPT)
 	interiors = _add_system(INTERIORS_SCRIPT)
 	phones = _add_system(PHONES_SCRIPT)
-	demolition = _add_system(DEMOLITION_SCRIPT)
+	zmp = _add_system(ZMP_SCRIPT)
 	footprints = FOOTPRINTS_SCRIPT.new()
 	add_child(footprints)
 	footprints.setup(self)
@@ -358,9 +360,20 @@ func _make_buildings() -> void:
 		body.position = center
 		body.collision_layer = BUILDING_LAYER
 		var collider := CollisionShape2D.new()
-		var shape := RectangleShape2D.new()
-		shape.size = size - Vector2(6, 6)
-		collider.shape = shape
+		if int(b[4]) == 2:
+			# Round towers are drawn as ellipses; collide as one too, or their
+			# invisible rect corners block the alleys next to them.
+			var poly := ConvexPolygonShape2D.new()
+			var pts := PackedVector2Array()
+			for k in 24:
+				var a := TAU * k / 24.0
+				pts.append(Vector2(cos(a) * (size.x * 0.5 - 3.0), sin(a) * (size.y * 0.5 - 3.0)))
+			poly.points = pts
+			collider.shape = poly
+		else:
+			var shape := RectangleShape2D.new()
+			shape.size = size - Vector2(6, 6)
+			collider.shape = shape
 		body.add_child(collider)
 
 		var mat := ShaderMaterial.new()
@@ -395,10 +408,11 @@ func _make_buildings() -> void:
 
 
 ## True when a building of canvas size `dim` (world size = dim * 4) centered at
-## `center` stays on the map, off the roads and clear of every other building.
+## `center` stays on the map, off the roads and keeps a walkable corridor
+## (wider than a brute) clear of every other building.
 func _building_fits(center: Vector2, dim: Vector2, index: int, rects: Array[Rect2]) -> bool:
 	var half := dim * 2.0
-	var rect := Rect2(center - half, half * 2.0).grow(10.0)
+	var rect := Rect2(center - half, half * 2.0).grow(60.0)
 	if not Rect2(20, 20, COLS * CELL - 40, ROWS * CELL - 40).encloses(rect):
 		return false
 	for vx in VROADS:
@@ -486,8 +500,10 @@ func _spawn_entities(herb_count: int, zombie_mult: float, view_center: Vector2) 
 			spawn_zombie(pos, _random_variant(), -1, true)
 	for n in herb_count:
 		spawn_herb(_visible_spot(HERBS[n * HERBS.size() / herb_count]))
-	for pos in CRATES:
-		spawn_crate(_visible_spot(pos))
+	# One street crate per run is guaranteed to hold a ZMP.
+	var zmp_crate := randi() % CRATES.size()
+	for i in CRATES.size():
+		spawn_crate(_visible_spot(CRATES[i]), false, false, i == zmp_crate)
 
 
 ## Mostly walkers; a few runners, brutes and screamers.
@@ -536,10 +552,12 @@ func spawn_herb(pos: Vector2, cure_index: int = -1) -> Node:
 	return herb
 
 
-func spawn_crate(pos: Vector2, guaranteed_loot: bool = false, no_clues: bool = false) -> Node:
+func spawn_crate(pos: Vector2, guaranteed_loot: bool = false, no_clues: bool = false,
+		guaranteed_zmp: bool = false) -> Node:
 	var crate := CRATE_SCENE.instantiate()
 	crate.guaranteed_loot = guaranteed_loot
 	crate.no_clues = no_clues
+	crate.guaranteed_zmp = guaranteed_zmp
 	crate.position = pos
 	add_child(crate)
 	return crate

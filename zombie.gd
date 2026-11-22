@@ -52,6 +52,7 @@ var _invest_t := 0.0
 var _rally_target: Node2D = null
 var _rally_t := 0.0
 var _horde := false
+var _was_horde := false  # spawned as part of a horde: rejoins it when idle
 var _horde_path := PackedVector2Array()
 var _horde_i := 0
 var _horde_speed := HORDE_SPEED
@@ -92,6 +93,13 @@ var _last_print_born := -INF
 var _dodge_node: Node2D = null
 var _dodge_close := false
 var _dodge_touched := false
+
+# unstick steering (detour along walls when wedged behind an obstacle)
+var _stuck_t := 0.0
+var _avoid_dir := Vector2.ZERO
+var _avoid_t := 0.0
+var _avoid_again_t := 0.0
+var _avoid_side := 1.0
 
 
 func _ready() -> void:
@@ -200,6 +208,21 @@ func _physics_process(delta: float) -> void:
 		else:
 			chase = _chase_target
 
+	# A horde member that lost its quarry (and has nothing else to do)
+	# rejoins the march and leaves with the horde.
+	if _was_horde and not _horde and chase == null and _invest_t <= 0.0 \
+			and not _horde_path.is_empty():
+		_horde = true
+		# Resume at the closest remaining waypoint rather than backtracking.
+		var best := _horde_i
+		var best_d := INF
+		for i in range(_horde_i, _horde_path.size()):
+			var d := global_position.distance_squared_to(_horde_path[i])
+			if d < best_d:
+				best_d = d
+				best = i
+		_horde_i = best
+
 	var moving_speed := 0.0
 	var dir := Vector2.ZERO
 	var accel := 900.0 if _lurch_depth > 0.0 else 600.0
@@ -246,6 +269,9 @@ func _physics_process(delta: float) -> void:
 			dir = _wander_dir
 			moving_speed = wander_speed
 
+	if _lunge_t <= 0.0:
+		dir = _steer(delta, dir, moving_speed)
+
 	var target_velocity := dir * moving_speed * gait
 	if _sway > 0.0 and dir != Vector2.ZERO and _lunge_t <= 0.0:
 		_sway_phase += delta * 2.3
@@ -256,6 +282,42 @@ func _physics_process(delta: float) -> void:
 	_animate(delta)
 	_contact(delta, near, chase)
 	_track_dodge(delta, chase)
+
+
+## Unstick steering. When the zombie wants to move but last frame's
+## move_and_slide left it pinned against something, detour along the wall
+## (the side closer to the desired direction) for a short burst. If it jams
+## again right away — a concave pocket — try the other side.
+func _steer(delta: float, dir: Vector2, speed: float) -> Vector2:
+	_avoid_again_t = maxf(_avoid_again_t - delta, 0.0)
+	if dir == Vector2.ZERO or speed <= 0.0:
+		_stuck_t = 0.0
+		_avoid_t = 0.0
+		return dir
+	if _avoid_t > 0.0:
+		_avoid_t -= delta
+		return _avoid_dir
+	var blocked := get_slide_collision_count() > 0 \
+			and get_real_velocity().length() < speed * 0.35
+	if blocked:
+		_stuck_t += delta
+	else:
+		_stuck_t = maxf(_stuck_t - delta * 2.0, 0.0)
+	if _stuck_t < 0.3 or get_slide_collision_count() == 0:
+		return dir
+	_stuck_t = 0.0
+	var normal := get_slide_collision(0).get_normal()
+	var tangent := normal.orthogonal()
+	if tangent.dot(dir) < 0.0:
+		tangent = -tangent
+	if _avoid_again_t > 0.0:  # just tried this: take the other side of the wall
+		_avoid_side = -_avoid_side
+	else:
+		_avoid_side = 1.0
+	_avoid_dir = (tangent * _avoid_side + normal * 0.5).normalized()
+	_avoid_t = randf_range(0.45, 0.8)
+	_avoid_again_t = _avoid_t + 1.2
+	return _avoid_dir
 
 
 ## Lurching speed multiplier (|sin| surges with an irregular phase) plus twitch pauses.
@@ -432,6 +494,7 @@ func set_horde_path(points: PackedVector2Array) -> void:
 	_horde_path = points
 	_horde_i = 0
 	_horde = points.size() > 0
+	_was_horde = _horde
 	_invest_t = 0.0
 
 
@@ -493,6 +556,7 @@ func feed(by: Node2D) -> void:
 	_chase_target = null
 	_rally_target = null
 	_horde = false
+	_was_horde = false
 	_invest_t = 0.0
 	remove_from_group("zombies")
 	add_to_group("fed_zombie")
@@ -518,7 +582,8 @@ func _process_fed(delta: float) -> void:
 	var tv := Vector2.ZERO
 	if go:
 		var to := goal - global_position
-		tv = to.normalized() * minf(chase_speed * 0.8, to.length() * 6.0 + 40.0)
+		var sp := minf(chase_speed * 0.8, to.length() * 6.0 + 40.0)
+		tv = _steer(delta, to.normalized(), sp) * sp
 	velocity = velocity.move_toward(tv, 800.0 * delta)
 	move_and_slide()
 	if velocity.length() > 5.0:

@@ -56,6 +56,12 @@ func _blocked(c: Vector2) -> bool:
 	for hy: float in main.HROADS:
 		if absf(c.y - hy) < 62.0:
 			return true
+	# keep a walkable gap to signs, trash cans and dumpsters
+	var d = main.get("districts")
+	if d != null and d.get("solids") != null:
+		for s: Vector2 in d.solids:
+			if c.distance_to(s) < 75.0:
+				return true
 	return false
 
 

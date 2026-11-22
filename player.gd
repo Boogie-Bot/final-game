@@ -27,7 +27,6 @@ const CURE_NAMES: Array[String] = ["Chamomile", "Lavender", "Echinacea", "Garlic
 @export var tonic_free_time: float = 8.0
 @export var shove_cooldown: float = 2.0
 @export var shove_range: float = 70.0
-@export var throw_range: float = 380.0
 @export var serum_duration: float = 60.0
 @export var serum_factor: float = 0.4
 @export var interact_range: float = 56.0
@@ -44,7 +43,7 @@ var cures: Array[bool] = [false, false, false, false]
 var is_zombie: bool = false
 var dead: bool = false  # only set when the run ends; freezes input
 var stamina: float = 100.0
-var inventory := {bottle = 0, tonic = 0, charge = 0}
+var inventory := {bottle = 0, tonic = 0, zmp = 0}
 var rooted: bool = false
 var interior_id: int = -1
 var in_safe_house: bool = false
@@ -171,7 +170,7 @@ func _human_actions(_direction: Vector2) -> void:
 	if Input.is_action_just_pressed("Throw"):
 		_throw()
 	if Input.is_action_just_pressed("Charge"):
-		_place_charge()
+		_use_zmp()
 	if Input.is_action_just_pressed("Interact"):
 		_interact()
 	if Input.is_action_just_pressed("Eat"):
@@ -287,23 +286,24 @@ func _throw() -> void:
 	var main = Game.main
 	if main == null:
 		return
-	var to := get_global_mouse_position() - global_position
-	if to.length() > throw_range:
-		to = to.normalized() * throw_range
+	# Throw the way we're facing, about half a screen-width far.
+	var dir := Vector2.from_angle(stack.stack_rotation)
+	var dist: float = get_viewport_rect().size.x / camera.zoom.x * 0.5
 	var bottle: Node = load("res://thrown_bottle.gd").new()
 	main.add_child(bottle)
-	bottle.launch(global_position, global_position + to)
+	bottle.launch(global_position, global_position + dir * dist)
 	inventory.bottle -= 1
 	inventory_changed.emit(inventory)
 	Sfx.play(&"throw", global_position)
 
 
-func _place_charge() -> void:
-	if inventory.charge <= 0 or Game.main == null:
+func _use_zmp() -> void:
+	if inventory.zmp <= 0 or Game.main == null:
 		return
-	var demo = Game.main.get("demolition")
-	if demo and demo.place_charge(global_position):
-		inventory.charge -= 1
+	var zmp = Game.main.get("zmp")
+	if zmp:
+		zmp.detonate(global_position)
+		inventory.zmp -= 1
 		inventory_changed.emit(inventory)
 
 

@@ -19,7 +19,7 @@ const CUES := {
 	# World
 	&"crate_break": "", &"car_alarm": "", &"siren": "", &"phone_ring": "",
 	&"phone_voice": "", &"phone_hangup": "", &"phone_garble": "",
-	&"charge_beep": "", &"explosion": "", &"building_collapse": "",
+	&"zmp_blast": "", &"explosion": "", &"building_collapse": "",
 	&"puddle_splash": "", &"rain_loop": "", &"thunder": "",
 	&"door_open": "", &"door_lock": "", &"window_smash": "", &"brew_bubble": "",
 	# Music / herbs

@@ -4,16 +4,16 @@ extends Control
 ## pause menu (controls) and (as a zombie) the roar cooldown. All hidden until
 ## the run actually starts.
 
-const ITEM_ORDER: Array[StringName] = [&"bottle", &"tonic", &"charge"]
+const ITEM_ORDER: Array[StringName] = [&"bottle", &"tonic", &"zmp"]
 const ROAR_COOLDOWN := 10.0
 const ARROW_TIME := 3.0  # herb-clue arrow: 3 pulses over 3 seconds
 
 const CONTROLS_TEXT := """WASD  move      Shift  sprint
 Space  enter door / open crate / shove
 E  interact
-Q  throw bottle at cursor
+Q  throw bottle ahead
 R  feed herb to zombie
-C  eat herb     F  plant charge
+C  eat herb     F  detonate ZMP
 F1  80's mode
 
 AS A ZOMBIE

@@ -115,9 +115,6 @@ func _make_props() -> void:
 		[&"dumpster", Vector2(3470, -1010), Vector2(52, 36)],
 		[&"dumpster", Vector2(3935, -1130), Vector2(52, 36)],
 		[&"trash_can", Vector2(3450, -920), Vector2(22, 22)],
-		[&"trash_can", Vector2(3955, -930), Vector2(22, 22)],
-		[&"trash_can", Vector2(3440, -1080), Vector2(22, 22)],
-		[&"trash_can", Vector2(3960, -1040), Vector2(22, 22)],
 	]
 	for p in props:
 		var body := StaticBody2D.new()
@@ -179,9 +176,9 @@ func _make_signs() -> void:
 		"WASD  move      Shift  sprint",
 		"Space  enter door / open crate / shove",
 		"E  interact",
-		"Q  throw bottle at cursor",
+		"Q  throw bottle ahead",
 		"R  feed herb to zombie",
-		"C  eat herb     F  plant charge",
+		"C  eat herb     F  detonate ZMP",
 		"F1  80's mode",
 		"",
 		"AS A ZOMBIE",

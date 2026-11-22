@@ -98,15 +98,27 @@ func _stamp() -> void:
 	if persistent:
 		if not on_map:
 			return
+		# Easy/medium keep the small exploration light; never the hard-mode one.
 		_stamp_circle(_player.global_position, clear_radius)
 	else:
+		var radius := _hard_radius()
 		_img.fill(FOG_COLOR)
 		if on_map:
-			_stamp_circle(_player.global_position, clear_radius)
-			_stamp_circle(_player.global_position, clear_radius, _explored)
+			_stamp_circle(_player.global_position, radius)
+			_stamp_circle(_player.global_position, radius, _explored)
 		for r in _reveals:
 			_stamp_circle(r.pos, r.radius)
 	(texture as ImageTexture).update(_img)
+
+
+## Hard-mode light radius: the lit circle (fade edge included) spans ~98% of
+## the screen height. Recomputed every stamp so window resizes keep it right.
+func _hard_radius() -> float:
+	var view := get_viewport_rect().size
+	var cam = _player.get("camera")
+	if cam is Camera2D:
+		view /= (cam as Camera2D).zoom
+	return maxf(view.y * 0.49 - FADE_BAND, CLEAR_RADIUS)
 
 
 func _stamp_circle(world_pos: Vector2, radius: float, target: Image = null) -> void:

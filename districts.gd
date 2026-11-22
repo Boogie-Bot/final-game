@@ -2,13 +2,23 @@ extends Node
 ## District flavor: a faint tint per map quadrant, a few themed props, street
 ## signs at every intersection, and the "entering <district>" announcement.
 ##
-## Street sign placement: each sign stands at intersection + SIGN_OFFSET, i.e. on
-## the north-west corner sidewalk, 40px from the streetlight at (-70, -70).
-## Payphones (phones.gd) should pick other corners / offsets.
+## Street sign placement: each sign tries the corner-sidewalk offsets in
+## SIGN_OFFSETS and takes the first spot with walkable clearance from
+## streetlights, buildings, trees and other solid props. If none is clear the
+## sign is placed without a collider so it can never pinch a path shut.
+## Payphones (phones.gd) check `solids` to keep clear of everything here.
 
-const SIGN_OFFSET := Vector2(-112.0, -60.0)
+const SIGN_OFFSETS: Array[Vector2] = [
+	Vector2(-112, -112), Vector2(112, -112), Vector2(-112, 112), Vector2(112, 112),
+	Vector2(-150, -60), Vector2(150, -60), Vector2(-150, 60), Vector2(150, 60),
+	Vector2(-60, -150), Vector2(60, -150), Vector2(-60, 150), Vector2(60, 150),
+]
 const TINT_ALPHA := 0.10
 const PROPS_PER_DISTRICT := 9
+
+## World positions of every blocking prop placed here (cans, dumpsters, signs),
+## so later placements (payphones) can keep a walkable gap.
+var solids: Array[Vector2] = []
 
 var main = null
 var _root: Node2D
@@ -81,21 +91,18 @@ func _make_props() -> void:
 			0:  # Old Market: dumpsters and trash cans
 				for n in 3:
 					_solid(&"dumpster", _pick(quad), Vector2(52, 36))
-				for n in 6:
+				for n in 2:
 					_solid(&"trash_can", _pick(quad), Vector2(22, 22))
 			1:  # Neon Heights: glowing neon blobs near the streetlights
 				_neon_lights(quad)
-				for n in 3:
-					_solid(&"trash_can", _pick(quad), Vector2(22, 22))
+				_solid(&"trash_can", _pick(quad), Vector2(22, 22))
 			2:  # Rustwater Docks: grime and barrel-like trash cans
 				for n in 10:
 					_stain(_pick(quad))
-				for n in 5:
-					_solid(&"trash_can", _pick(quad), Vector2(22, 22))
+				_solid(&"trash_can", _pick(quad), Vector2(22, 22))
 				_solid(&"dumpster", _pick(quad), Vector2(52, 36))
-			3:  # Mercy Hill: clean; just a couple of tidy bins
-				for n in 3:
-					_solid(&"trash_can", _pick(quad), Vector2(22, 22))
+			3:  # Mercy Hill: clean; a single tidy bin
+				_solid(&"trash_can", _pick(quad), Vector2(22, 22))
 
 
 ## A random sidewalk spot in `quad`, clear of roads, parks, buildings and corners.
@@ -132,12 +139,16 @@ func _spot_ok(p: Vector2) -> bool:
 	for q in _used:
 		if p.distance_to(q) < 80.0:
 			return false
+	for s in solids:
+		if p.distance_to(s) < 70.0:
+			return false
 	return true
 
 
 func _solid(model: StringName, pos: Vector2, collider_size: Vector2) -> void:
 	if pos.x < 0.0:
 		return
+	solids.append(pos)
 	var body := StaticBody2D.new()
 	body.position = pos
 	var collider := CollisionShape2D.new()
@@ -229,14 +240,23 @@ func _make_signs() -> void:
 	for vi in main.VROADS.size():
 		for hi in main.HROADS.size():
 			var corner := Vector2(main.VROADS[vi], main.HROADS[hi])
-			var pos := corner + SIGN_OFFSET
+			var pos := corner + SIGN_OFFSETS[0]
+			var clear := false
+			for off: Vector2 in SIGN_OFFSETS:
+				if _sign_spot_ok(corner + off, corner):
+					pos = corner + off
+					clear = true
+					break
 			var body := StaticBody2D.new()
 			body.position = pos
-			var collider := CollisionShape2D.new()
-			var shape := CircleShape2D.new()
-			shape.radius = 6.0
-			collider.shape = shape
-			body.add_child(collider)
+			if clear:
+				# Only a verified-clear sign blocks; a cramped one is walk-through.
+				solids.append(pos)
+				var collider := CollisionShape2D.new()
+				var shape := CircleShape2D.new()
+				shape.radius = 6.0
+				collider.shape = shape
+				body.add_child(collider)
 			var stack := SpriteStack.new()
 			stack.model = &"street_sign"
 			body.add_child(stack)
@@ -254,3 +274,25 @@ func _make_signs() -> void:
 			label.z_index = 50
 			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_root.add_child(label)
+
+
+## True when a sign pole at `pos` leaves a walkable gap (wider than any
+## character) to the corner's streetlights, buildings, park trees and the
+## other solid props.
+func _sign_spot_ok(pos: Vector2, corner: Vector2) -> bool:
+	if pos.x < 40.0 or pos.y < 40.0 or pos.x > main.COLS * main.CELL - 40.0 \
+			or pos.y > main.ROWS * main.CELL - 40.0:
+		return false
+	for light_off: Vector2 in [Vector2(-70, -70), Vector2(70, -70), Vector2(-70, 70), Vector2(70, 70)]:
+		if pos.distance_to(corner + light_off) < 55.0:
+			return false
+	for b in main.buildings:
+		if (b.rect as Rect2).grow(44.0).has_point(pos):
+			return false
+	for t: Vector2 in main.TREES:
+		if pos.distance_to(t) < 80.0:
+			return false
+	for s in solids:
+		if pos.distance_to(s) < 70.0:
+			return false
+	return true

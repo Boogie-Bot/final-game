@@ -59,8 +59,6 @@ static func get_frames(model_name: StringName) -> Array:
 				frames = [_bottle()]
 			&"tonic":
 				frames = [_tonic()]
-			&"charge":
-				frames = [_charge()]
 			&"crate_open":
 				frames = [_crate_open()]
 			&"street_sign":
@@ -310,20 +308,35 @@ static func _zombie_slices(swing: float) -> Array[ImageTexture]:
 # --- Props --------------------------------------------------------------------
 
 
+## Small treasure chest, 4 slices (half the old crate's height): banded wooden
+## body, domed lid with a gold lock on the front.
 static func _crate() -> Array[ImageTexture]:
-	var wood := Color(0.55, 0.38, 0.2)
-	var dark := Color(0.38, 0.25, 0.12)
+	var wood := Color(0.52, 0.34, 0.16)
+	var dark := Color(0.35, 0.22, 0.1)
+	var band := Color(0.28, 0.28, 0.34)
+	var gold := Color(0.95, 0.8, 0.3)
 	var slices: Array[ImageTexture] = []
-	for i in 8:
+	for i in 4:
 		var img := _img(12)
-		_rect(img, 2, 2, 8, 8, wood)
-		_rect(img, 2, 2, 8, 1, dark)
-		_rect(img, 2, 9, 8, 1, dark)
-		_rect(img, 2, 2, 1, 8, dark)
-		_rect(img, 9, 2, 1, 8, dark)
-		if i == 7:
-			_rect(img, 2, 5, 8, 1, dark)
-			_rect(img, 5, 2, 1, 8, dark)
+		if i < 3:
+			# body: wood box, dark rim, iron bands near each end
+			_rect(img, 2, 3, 8, 6, wood)
+			_rect(img, 2, 3, 8, 1, dark)
+			_rect(img, 2, 8, 8, 1, dark)
+			_rect(img, 2, 3, 1, 6, dark)
+			_rect(img, 9, 3, 1, 6, dark)
+			_rect(img, 3, 3, 1, 6, band)
+			_rect(img, 8, 3, 1, 6, band)
+			if i > 0:  # lock plate on the front face
+				_rect(img, 5, 8, 2, 1, gold)
+		else:
+			# domed lid: inset, banded, gold clasp at the front
+			_rect(img, 3, 4, 6, 4, wood)
+			_rect(img, 3, 4, 6, 1, dark)
+			_rect(img, 3, 7, 6, 1, dark)
+			_px(img, 3, 5, band)
+			_px(img, 8, 5, band)
+			_rect(img, 5, 7, 2, 1, gold)
 		slices.append(_tex(img))
 	return slices
 
@@ -825,7 +838,7 @@ static func interior_floor_texture(style: int) -> ImageTexture:
 
 
 ## Small flat HUD icon (12x12) for an inventory item:
-## &"bottle", &"tonic", &"charge", &"herb", &"serum".
+## &"bottle", &"tonic", &"zmp", &"herb", &"serum".
 static func item_icon(item: StringName) -> ImageTexture:
 	var key := "item_" + String(item)
 	if not _cache.has(key):
@@ -870,25 +883,25 @@ static func item_icon(item: StringName) -> ImageTexture:
 					"g": Color(0.65, 0.8, 0.95), "c": Color(0.72, 0.52, 0.3),
 					"C": Color(0.55, 0.38, 0.2),
 				})
-			&"charge":
+			&"zmp":
+				# ZMP: dark coil canister with cyan rings and a spark on top.
 				img = _pixmap(PackedStringArray([
-					".......yy...",
-					"......y..y..",
-					".rR.rR.rR.y.",
-					".rR.rR.rR...",
-					".rR.rR.rR...",
-					"kkkkkkkkkkk.",
-					"kkGGGGGkkLk.",
-					"kkkkkkkkkkk.",
-					".rR.rR.rR...",
-					".rR.rR.rR...",
-					".rd.rd.rd...",
+					".....z......",
+					"....zZz.....",
+					".....z.z....",
+					"...kkkkkk...",
+					"..kBBBBBBk..",
+					"..kkkkkkkk..",
+					"..kbbbbbbk..",
+					"..kkkkkkkk..",
+					"..kBBBBBBk..",
+					"..kkkkkkkk..",
+					"...dddddd...",
 					"............",
 				]), {
-					"r": Color(0.78, 0.16, 0.12), "R": Color(0.95, 0.4, 0.3),
-					"d": Color(0.5, 0.1, 0.08), "k": Color(0.14, 0.14, 0.17),
-					"G": Color(0.4, 1.0, 0.45), "L": Color(1.0, 0.25, 0.2),
-					"y": Color(0.95, 0.8, 0.2),
+					"k": Color(0.14, 0.14, 0.17), "d": Color(0.08, 0.08, 0.1),
+					"B": Color(0.45, 0.9, 1.0), "b": Color(0.25, 0.55, 0.8),
+					"z": Color(0.7, 1.0, 1.0), "Z": Color(1.0, 1.0, 1.0),
 				})
 			&"herb":
 				img = _pixmap(PackedStringArray([
@@ -1712,95 +1725,41 @@ static func _tonic() -> Array[ImageTexture]:
 	return slices
 
 
-## Demolition charge: three taped dynamite sticks with a timer on top.
-static func _charge() -> Array[ImageTexture]:
-	var red := Color(0.8, 0.17, 0.13)
-	var red_dark := Color(0.55, 0.1, 0.08)
-	var red_light := Color(0.95, 0.4, 0.3)
-	var tape := Color(0.12, 0.12, 0.14)
-	var box := Color(0.2, 0.2, 0.24)
-	var wire := Color(0.95, 0.8, 0.2)
-	var slices: Array[ImageTexture] = []
-	var lower := _img(10)
-	_rect(lower, 1, 2, 8, 6, red_dark)
-	_rect(lower, 3, 2, 1, 6, tape)
-	_rect(lower, 6, 2, 1, 6, tape)
-	slices.append(_tex(lower))
-	var mid := _img(10)
-	_rect(mid, 1, 2, 8, 6, red)
-	_rect(mid, 3, 2, 1, 6, tape)
-	_rect(mid, 6, 2, 1, 6, tape)
-	_rect(mid, 8, 2, 1, 6, Color(0.75, 0.65, 0.45))  # stick ends
-	slices.append(_tex(mid))
-	var upper := _img(10)
-	for s in 3:
-		_rect(upper, 1, 2 + s * 2, 8, 2, red)
-		_rect(upper, 1, 2 + s * 2, 8, 1, red_light)
-	_rect(upper, 3, 2, 1, 6, tape)
-	_rect(upper, 6, 2, 1, 6, tape)
-	slices.append(_tex(upper))
-	var timer := _img(10)
-	_rect(timer, 3, 3, 4, 4, box)
-	_px(timer, 7, 5, wire)
-	_px(timer, 8, 6, wire)
-	_px(timer, 2, 3, wire)
-	slices.append(_tex(timer))
-	var face := _img(10)
-	_rect(face, 3, 3, 4, 4, box.lightened(0.12))
-	_rect(face, 4, 4, 2, 1, Color(0.4, 1.0, 0.45))
-	_px(face, 5, 5, Color(1.0, 0.25, 0.2))
-	_rect(face, 3, 6, 4, 1, tape)
-	slices.append(_tex(face))
-	return slices
-
-
-## The crate after it has been smashed open: hollow, splintered rim, one
-## plank fallen across the top. Same footprint as _crate.
+## The chest after it has been opened: lid flipped back behind the body,
+## hollow inside with a glint of gold. Same footprint and height as _crate.
 static func _crate_open() -> Array[ImageTexture]:
-	var wood := Color(0.55, 0.38, 0.2)
-	var dark := Color(0.38, 0.25, 0.12)
+	var wood := Color(0.52, 0.34, 0.16)
+	var dark := Color(0.35, 0.22, 0.1)
+	var band := Color(0.28, 0.28, 0.34)
+	var gold := Color(0.95, 0.8, 0.3)
+	var gold_hi := Color(1.0, 0.95, 0.6)
 	var inside := Color(0.2, 0.13, 0.07)
-	var pale := Color(0.72, 0.56, 0.35)  # fresh splintered wood
 	var slices: Array[ImageTexture] = []
-	for i in 8:
+	for i in 4:
 		var img := _img(12)
 		if i == 0:
-			_rect(img, 2, 2, 8, 8, inside)
-			_px(img, 4, 6, dark)
-			_px(img, 7, 4, dark)
-			_px(img, 6, 7, pale)
-		for p in 28:  # walk the 8x8 perimeter
-			var x := 2
-			var y := 2
-			if p < 8:
-				x = 2 + p
-			elif p < 15:
-				x = 9
-				y = 3 + (p - 8)
-			elif p < 22:
-				x = 8 - (p - 15)
-				y = 9
-			else:
-				y = 8 - (p - 22)
-			var corner := (x == 2 or x == 9) and (y == 2 or y == 9)
-			var wall_h := 5 + _hash(p / 2, 0, 41) % 3
-			if corner:
-				wall_h = 8 if y == 2 else 5 + (x % 2)
-			elif y == 9:
-				wall_h = 2 + _hash(p / 2, 0, 42) % 2  # front boards smashed in
-			elif y > 5:
-				wall_h = mini(wall_h, 5)
-			if i < wall_h:
-				var c := dark if corner or y == 2 or y == 9 else wood
-				if i == wall_h - 1 and not corner:
-					c = pale
-				img.set_pixel(x, y, c)
-		if i == 1:  # broken lid plank lying inside, tipped against the wall
-			_rect(img, 3, 6, 4, 2, wood)
-			_px(img, 3, 6, pale)
-		if i == 2:
-			_rect(img, 5, 5, 4, 2, wood)
-			_px(img, 5, 5, dark)
+			_rect(img, 2, 3, 8, 6, inside)
+		if i < 3:
+			# walls: back and sides full height, front opened low
+			_rect(img, 2, 3, 8, 1, dark)
+			_rect(img, 2, 3, 1, 6, dark if i == 2 else wood)
+			_rect(img, 9, 3, 1, 6, dark if i == 2 else wood)
+			_px(img, 3, 3, band)
+			_px(img, 8, 3, band)
+			if i < 2:
+				_rect(img, 2, 8, 8, 1, wood if i == 0 else dark)
+		if i <= 1:
+			# leftover treasure glinting inside
+			_px(img, 5, 6, gold)
+			_px(img, 6, 5, gold)
+			_px(img, 4, 5, gold)
+			if i == 0:
+				_px(img, 6, 7, gold)
+				_px(img, 5, 5, gold_hi)
+			# lid flipped open, lying flat behind the chest
+			_rect(img, 2, 1, 8, 2, wood if i == 0 else dark)
+			if i == 1:
+				_rect(img, 5, 1, 2, 1, gold)
 		slices.append(_tex(img))
 	return slices
 

@@ -4,21 +4,41 @@ extends StaticBody2D
 @export var guaranteed_loot := false
 ## Interior crates never contain clue notes.
 @export var no_clues := false
+## This crate always holds a ZMP (one per run is guaranteed).
+@export var guaranteed_zmp := false
 
 const CURE_COLORS: Array[Color] = [
 	Color(0.95, 0.95, 0.88), Color(0.68, 0.52, 0.88), Color(0.85, 0.45, 0.62), Color(0.92, 0.9, 0.8),
 ]
 ## Weighted loot table (weights from the design).
 const LOOT := [
-	[&"herb", 25], [&"tonic", 15], [&"bottle", 20], [&"note", 12], [&"charge", 8], [&"nothing", 20],
+	[&"herb", 25], [&"tonic", 15], [&"bottle", 20], [&"note", 12], [&"zmp", 8], [&"nothing", 20],
 ]
 
+const FLOAT_HEIGHT := 10.0
+
 var opened := false
+var _float_t := randf() * TAU
+
+@onready var _stack: SpriteStack = $Stack
 
 
 func _ready() -> void:
 	add_to_group(&"crates")
 	add_to_group(&"interactable")
+	# Chests hover: purely decorative, never block anyone's movement.
+	collision_layer = 0
+	collision_mask = 0
+
+
+## Unopened chests float, bob and slowly spin; an opened one settles down.
+func _process(delta: float) -> void:
+	if opened:
+		_stack.bob_offset = move_toward(_stack.bob_offset, 0.0, 30.0 * delta)
+		return
+	_float_t += delta
+	_stack.bob_offset = -FLOAT_HEIGHT + sin(_float_t * 2.2) * 2.5
+	_stack.stack_rotation += delta * 1.1
 
 
 func can_interact(body: Node) -> bool:
@@ -42,7 +62,7 @@ func interact(body: Node) -> void:
 func _roll(body: Node) -> String:
 	# Reroll notes when clues are impossible (interior crate) or pointless
 	# (every cure herb already collected) — never "nothing useful".
-	var kind := _pick()
+	var kind := &"zmp" if guaranteed_zmp else _pick()
 	while (guaranteed_loot and kind == &"nothing") or (kind == &"note" and not _clue_available()):
 		kind = _pick()
 	match kind:
@@ -56,9 +76,9 @@ func _roll(body: Node) -> String:
 		&"bottle":
 			body.give_item(&"bottle")
 			return "Bottle!"
-		&"charge":
-			body.give_item(&"charge")
-			return "Demolition charge!"
+		&"zmp":
+			body.give_item(&"zmp")
+			return "ZMP device!"
 		&"note":
 			return _clue()
 	return "Empty..."
