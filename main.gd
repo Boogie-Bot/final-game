@@ -127,9 +127,16 @@ const RETRO_SCRIPT := preload("res://retro.gd")
 
 const BUILDING_LAYER := 8  # collision layer 4: the zombie player (mask 1) walks through
 
+const HERB_CLEARANCE := 20.0  # open px herbs keep from every static item
+const HERB_RADIUS := 8.0  # half the herb sprite's drawn size
+
 @onready var player: CharacterBody2D = $Player
 
 var fog: FogOfWar
+## [position, footprint radius] of every static street item (cars, streetlights,
+## trees, crates, dumpsters, signs, payphones...). Herbs spawn with at least
+## HERB_CLEARANCE px of open space from all of them so they are never covered.
+var static_obstacles: Array = []
 ## One entry per building: {index, body, stack, rect, occluded, center, size, height_px,
 ## canvas_w, canvas_d, alive, kind, mat, xray}
 var buildings: Array[Dictionary] = []
@@ -237,10 +244,10 @@ func start_game(difficulty: int) -> void:
 	player.attack_rate = DIFFICULTIES[difficulty][3]
 	_spawn_interval = DIFFICULTIES[difficulty][4]
 	_spawn_timer = _spawn_interval
+	if Game.perks.get("bonus_chest", false):  # before herbs, so they keep clear of it
+		spawn_crate(_visible_spot(Vector2(380, 420)), true)
 	_spawn_entities(herb_count, zombie_mult, Vector2(300, 480))  # where the player lands
 	_spawn_cure_herbs()
-	if Game.perks.get("bonus_chest", false):
-		spawn_crate(_visible_spot(Vector2(380, 420)), true)
 	player.teleport(Vector2(300, 480))
 	player.outside_position = Vector2(300, 480)
 	player.set_camera_limits(Rect2(-48, -48, 2496, 1536))
@@ -450,17 +457,26 @@ func _make_props() -> void:
 		var car := CAR_SCRIPT.new()
 		car.setup(c[0], c[1], c[2])
 		add_child(car)
+		register_obstacle(c[0], 46.0)  # the tipped car sprite spans ~84x50
 	for vx in VROADS:
 		for hy in HROADS:
 			for corner: Vector2 in [Vector2(-70, -70), Vector2(70, -70), Vector2(-70, 70), Vector2(70, 70)]:
 				var pos := Vector2(vx, hy) + corner
-				_add_prop(&"streetlight", pos, (Vector2(vx, hy) - pos).angle(), 5.0)
+				_add_prop(&"streetlight", pos, (Vector2(vx, hy) - pos).angle(), 5.0, 16.0)
 	for pos in TREES:
 		if not point_in_building(pos):  # grown round towers can swallow tree spots
-			_add_prop(&"tree", pos, 0.0, 7.0)
+			_add_prop(&"tree", pos, 0.0, 7.0, 28.0)
 
 
-func _add_prop(model: StringName, pos: Vector2, rot: float, collision_radius: float) -> void:
+## Records a static item's position and visual footprint radius, so herb
+## spawns can keep clear of it.
+func register_obstacle(pos: Vector2, radius: float) -> void:
+	static_obstacles.append([pos, radius])
+
+
+func _add_prop(model: StringName, pos: Vector2, rot: float, collision_radius: float,
+		footprint_radius: float = -1.0) -> void:
+	register_obstacle(pos, maxf(footprint_radius, collision_radius))
 	var body := StaticBody2D.new()
 	body.position = pos
 	var collider := CollisionShape2D.new()
@@ -498,12 +514,13 @@ func _spawn_entities(herb_count: int, zombie_mult: float, view_center: Vector2) 
 			tries += 1
 		if can_spawn_enemy_at(pos, view_center):
 			spawn_zombie(pos, _random_variant(), -1, true)
-	for n in herb_count:
-		spawn_herb(_visible_spot(HERBS[n * HERBS.size() / herb_count]))
+	# Crates go down before herbs, so herb spawns can keep clear of them.
 	# One street crate per run is guaranteed to hold a ZMP.
 	var zmp_crate := randi() % CRATES.size()
 	for i in CRATES.size():
 		spawn_crate(_visible_spot(CRATES[i]), false, false, i == zmp_crate)
+	for n in herb_count:
+		spawn_herb(_visible_spot(HERBS[n * HERBS.size() / herb_count]))
 
 
 ## Mostly walkers; a few runners, brutes and screamers.
@@ -547,9 +564,34 @@ func can_spawn_enemy_at(pos: Vector2, view_center: Variant = null) -> bool:
 func spawn_herb(pos: Vector2, cure_index: int = -1) -> Node:
 	var herb := HERB_SCENE.instantiate()
 	herb.cure_index = cure_index
-	herb.position = pos
+	herb.position = clear_herb_spot(pos)
 	add_child(herb)
 	return herb
+
+
+## True when an herb at p sits HERB_CLEARANCE px clear of every static item
+## and is not covered by a building.
+func herb_spot_clear(p: Vector2) -> bool:
+	for o in static_obstacles:
+		if p.distance_to(o[0]) < o[1] + HERB_CLEARANCE + HERB_RADIUS:
+			return false
+	return not point_hidden(p) and not point_in_building(p)
+
+
+## The nearest spot to pos where an herb is fully visible: rings of candidate
+## points spiral outward until one has clearance. Falls back to pos itself.
+func clear_herb_spot(pos: Vector2) -> Vector2:
+	var p := visible_spot(pos)
+	if herb_spot_clear(p):
+		return p
+	for ring in range(1, 14):
+		var r := ring * 16.0
+		for k in 12:
+			var q := p + Vector2.from_angle(k * TAU / 12.0 + ring * 0.5) * r
+			if q.x > 40.0 and q.y > 40.0 and q.x < COLS * CELL - 40.0 \
+					and q.y < ROWS * CELL - 40.0 and herb_spot_clear(q):
+				return q
+	return p
 
 
 func spawn_crate(pos: Vector2, guaranteed_loot: bool = false, no_clues: bool = false,
@@ -560,6 +602,7 @@ func spawn_crate(pos: Vector2, guaranteed_loot: bool = false, no_clues: bool = f
 	crate.guaranteed_zmp = guaranteed_zmp
 	crate.position = pos
 	add_child(crate)
+	register_obstacle(crate.position, 26.0)  # 36x36 collider, ~25.5 half-diagonal
 	return crate
 
 
@@ -604,7 +647,7 @@ func random_open_point(rect: Rect2) -> Vector2:
 			randf_range(rect.position.x, rect.end.x),
 			randf_range(rect.position.y, rect.end.y)
 		)
-		if not point_hidden(p) and not point_in_building(p):
+		if herb_spot_clear(p):
 			return p
 	return visible_spot(rect.get_center())
 

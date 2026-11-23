@@ -42,6 +42,7 @@ func _place() -> void:
 		ph.position = c
 		main.add_child(ph)
 		phones.append(ph)
+		main.register_obstacle(c, 16.0)
 
 
 func _blocked(c: Vector2) -> bool:

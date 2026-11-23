@@ -149,6 +149,7 @@ func _solid(model: StringName, pos: Vector2, collider_size: Vector2) -> void:
 	if pos.x < 0.0:
 		return
 	solids.append(pos)
+	main.register_obstacle(pos, maxf(collider_size.x, collider_size.y) * 0.5 + 6.0)
 	var body := StaticBody2D.new()
 	body.position = pos
 	var collider := CollisionShape2D.new()
@@ -247,6 +248,7 @@ func _make_signs() -> void:
 					pos = corner + off
 					clear = true
 					break
+			main.register_obstacle(pos, 12.0)
 			var body := StaticBody2D.new()
 			body.position = pos
 			if clear:

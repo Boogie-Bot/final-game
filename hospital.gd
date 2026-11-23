@@ -113,6 +113,7 @@ func _build_visuals() -> void:
 	bench_stack.model = &"lab_bench"
 	bench.add_child(bench_stack)
 	_root.add_child(bench)
+	main.register_obstacle(bench.position, 32.0)
 
 	_bubbles = CPUParticles2D.new()
 	_bubbles.position = _lab
